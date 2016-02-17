@@ -1,27 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:spring="http://www.springframework.org/schema/beans" 
+<mule
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:spring="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
 http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
-http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
-http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
-    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8082" doc:name="HTTP Listener Configuration"/>
-    <db:derby-config name="Derby_Configuration" url="jdbc:derby:memory:muleEmbeddedDB;create=true" doc:name="Derby Configuration"/>
-    <spring:beans>
-        <spring:bean id="Bean" name="Bean" class="com.mulesoft.training.Database"/>
-    </spring:beans>
-    <flow name="mavenFlow">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/hello" allowedMethods="get" doc:name="HTTP"/>
-        <set-payload value="Hello World" doc:name="Set Payload"/>
-    </flow>
-    <flow name="mavenFlowWithDb">
-        <http:listener config-ref="HTTP_Listener_Configuration" path="/flights" allowedMethods="get" doc:name="HTTP"/>
-        <db:select config-ref="Derby_Configuration" doc:name="Database">
-            <db:parameterized-query><![CDATA[SELECT * FROM FLIGHTS]]></db:parameterized-query>
-        </db:select>
-        <object-to-string-transformer doc:name="Object to String"/>
-    </flow>
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+	<http:listener-config
+		name="HTTP_Listener_Configuration"
+		host="0.0.0.0"
+		port="8082"
+		doc:name="HTTP Listener Configuration" />
+	<db:derby-config
+		name="Derby_Configuration"
+		url="jdbc:derby:memory:muleEmbeddedDB;create=true"
+		doc:name="Derby Configuration" />
+	<spring:beans>
+		<spring:bean
+			id="Bean"
+			name="Bean"
+			class="com.mulesoft.training.Database" />
+	</spring:beans>
+	<flow name="mavenFlow">
+		<http:listener
+			config-ref="HTTP_Listener_Configuration"
+			path="/hello"
+			allowedMethods="get"
+			doc:name="HTTP" />
+		<set-payload
+			value="Hello World"
+			doc:name="Set Payload" />
+	</flow>
+	<flow name="retrieveFlights">
+		<http:listener
+			config-ref="HTTP_Listener_Configuration"
+			path="/flights"
+			allowedMethods="get"
+			doc:name="HTTP" />
+		<db:select
+			config-ref="Derby_Configuration"
+			doc:name="Database">
+			<db:parameterized-query><![CDATA[SELECT * FROM FLIGHTS]]></db:parameterized-query>
+		</db:select>
+		<json:object-to-json-transformer doc:name="Object to JSON" />
+        <response>
+            <logger message="#[message.payload]" level="INFO" category="com.mulesoft.training.maven-project.logFiles" doc:name="Logger"/>
+        </response>
+	</flow>
+	<catch-exception-strategy name="maven-projectCatch_Exception_Strategy">
+		<logger
+			message="[notify-sla-nt2 - responte-type-network]"
+			level="INFO"
+			category="com.mulesoft.training.maven-project.retrieveFlights"
+			doc:name="Logger" />
+		<logger
+			message="Connrction refused to rigit network API vnet:#[exception.message]"
+			level="INFO"
+			category="com.mulesoft.training.maven-project.RetrieveFlights"
+			doc:name="Logger" />
+	</catch-exception-strategy>
 </mule>
